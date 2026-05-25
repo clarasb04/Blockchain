@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blockchain Vote · UPF 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #1a1a24;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.15);
+    --accent: #7c6dfa;
+    --accent2: #a594ff;
+    --green: #22d37a;
+    --red: #f55;
+    --amber: #f5a623;
+    --text: #e8e8f0;
+    --muted: #888899;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* grid bg */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(124,109,250,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124,109,250,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap { position: relative; z-index: 1; max-width: 760px; margin: 0 auto; padding: 48px 24px 80px; }
+
+  /* header */
+  .header { margin-bottom: 48px; }
+  .tag-upf {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--accent2);
+    border: 1px solid rgba(124,109,250,0.3);
+    padding: 4px 10px;
+    border-radius: 4px;
+    margin-bottom: 16px;
+  }
+  h1 {
+    font-family: var(--mono);
+    font-size: clamp(28px, 5vw, 42px);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    color: #fff;
+  }
+  h1 span { color: var(--accent2); }
+  .subtitle {
+    margin-top: 10px;
+    font-size: 14px;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+
+  /* wallet bar */
+  .wallet-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); flex-shrink: 0; }
+  .dot.on { background: var(--green); box-shadow: 0 0 8px var(--green); }
+  .wallet-addr { font-family: var(--mono); font-size: 13px; color: var(--muted); flex: 1; }
+  .wallet-addr span { color: var(--text); }
+  .btn-connect {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    white-space: nowrap;
+  }
+  .btn-connect:hover { opacity: 0.85; }
+  .btn-connect:active { transform: scale(0.97); }
+  .network-badge {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: rgba(245,166,35,0.15);
+    color: var(--amber);
+    border: 1px solid rgba(245,166,35,0.2);
+  }
+
+  /* contract info */
+  .contract-info {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 24px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .contract-info a { color: var(--accent2); text-decoration: none; }
+  .contract-info a:hover { text-decoration: underline; }
+
+  /* section title */
+  .section-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    padding-left: 2px;
+  }
+
+  /* status banner */
+  .status-banner {
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-family: var(--mono);
+    font-size: 13px;
+    margin-bottom: 24px;
+    border: 1px solid transparent;
+    display: none;
+  }
+  .status-banner.show { display: block; }
+  .status-banner.info { background: rgba(124,109,250,0.1); border-color: rgba(124,109,250,0.3); color: var(--accent2); }
+  .status-banner.success { background: rgba(34,211,122,0.1); border-color: rgba(34,211,122,0.3); color: var(--green); }
+  .status-banner.error { background: rgba(255,85,85,0.1); border-color: rgba(255,85,85,0.3); color: var(--red); }
+  .status-banner.warn { background: rgba(245,166,35,0.1); border-color: rgba(245,166,35,0.2); color: var(--amber); }
+
+  /* candidates */
+  .candidates { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 32px; }
+  .candidate-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, transform 0.1s;
+    position: relative;
+    overflow: hidden;
+  }
+  .candidate-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent);
+    transform: scaleX(0);
+    transition: transform 0.2s;
+    transform-origin: left;
+  }
+  .candidate-card:hover { border-color: var(--border2); background: var(--surface2); transform: translateY(-2px); }
+  .candidate-card:hover::before { transform: scaleX(1); }
+  .candidate-card.selected { border-color: var(--accent); background: rgba(124,109,250,0.08); }
+  .candidate-card.selected::before { transform: scaleX(1); }
+  .candidate-card.winner { border-color: var(--green); }
+  .candidate-card.winner::before { background: var(--green); transform: scaleX(1); }
+  .candidate-idx { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-bottom: 8px; }
+  .candidate-name { font-family: var(--mono); font-size: 20px; font-weight: 600; color: #fff; margin-bottom: 12px; }
+  .vote-count { font-family: var(--mono); font-size: 28px; font-weight: 600; color: var(--accent2); }
+  .vote-label { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .bar-track { height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; margin-top: 14px; overflow: hidden; }
+  .bar-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.5s ease; width: 0%; }
+  .candidate-card.winner .bar-fill { background: var(--green); }
+  .winner-crown { position: absolute; top: 12px; right: 12px; font-size: 16px; }
+
+  /* vote action */
+  .vote-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+  .btn-vote {
+    width: 100%;
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 600;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 14px;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    letter-spacing: 0.02em;
+    margin-top: 14px;
+  }
+  .btn-vote:hover:not(:disabled) { opacity: 0.85; }
+  .btn-vote:active:not(:disabled) { transform: scale(0.98); }
+  .btn-vote:disabled { opacity: 0.35; cursor: not-allowed; }
+  .selected-info { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+  .selected-info span { color: var(--accent2); font-weight: 500; }
+
+  /* chairperson panel */
+  .chair-panel {
+    background: var(--surface);
+    border: 1px solid rgba(245,166,35,0.2);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+  .chair-label { font-family: var(--mono); font-size: 11px; color: var(--amber); letter-spacing: 0.08em; margin-bottom: 12px; }
+  .input-row { display: flex; gap: 8px; }
+  input[type=text] {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  input[type=text]:focus { border-color: var(--accent); }
+  input[type=text]::placeholder { color: var(--muted); }
+  .btn-small {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: rgba(245,166,35,0.15);
+    color: var(--amber);
+    border: 1px solid rgba(245,166,35,0.3);
+    border-radius: 6px;
+    padding: 10px 14px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s;
+  }
+  .btn-small:hover { background: rgba(245,166,35,0.25); }
+
+  /* event log */
+  .log-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+  }
+  .log-scroll { max-height: 160px; overflow-y: auto; }
+  .log-entry {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 5px 0;
+    border-bottom: 1px solid var(--border);
+    color: var(--muted);
+    display: flex;
+    gap: 10px;
+  }
+  .log-entry:last-child { border-bottom: none; }
+  .log-time { color: rgba(255,255,255,0.2); flex-shrink: 0; }
+  .log-entry .ev { color: var(--accent2); }
+  .log-entry .addr { color: var(--green); }
+  .log-empty { font-family: var(--mono); font-size: 12px; color: rgba(255,255,255,0.15); padding: 8px 0; }
+
+  /* etherscan link */
+  .etherscan-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    text-decoration: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 14px;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .etherscan-btn:hover { border-color: var(--border2); color: var(--text); }
+
+  /* spinner */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.2);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .candidate-card { animation: fadeIn 0.3s ease both; }
+  .candidate-card:nth-child(1) { animation-delay: 0.05s; }
+  .candidate-card:nth-child(2) { animation-delay: 0.1s; }
+  .candidate-card:nth-child(3) { animation-delay: 0.15s; }
+
+  .voted-badge {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 11px;
+    background: rgba(34,211,122,0.15);
+    color: var(--green);
+    border: 1px solid rgba(34,211,122,0.3);
+    border-radius: 4px;
+    padding: 3px 8px;
+    margin-left: 8px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="header">
+    <div class="tag-upf">BLOCKCHAIN TECHNOLOGY · UPF 2026</div>
+    <h1>On-chain<br><span>Electronic Vote</span></h1>
+    <div class="subtitle">// Sepolia Testnet · Ballot.sol</div>
+  </div>
+
+  <!-- wallet -->
+  <div class="wallet-bar">
+    <div class="dot" id="dot"></div>
+    <div class="wallet-addr" id="wallet-addr">Not connected</div>
+    <span class="network-badge" id="network-badge" style="display:none">Sepolia</span>
+    <button class="btn-connect" id="btn-connect" onclick="connectWallet()">Connect MetaMask</button>
+  </div>
+
+  <!-- contract info -->
+  <div class="contract-info">
+    <span>contract:</span>
+    <a id="etherscan-link" href="#" target="_blank" id="contract-addr-display">0x0000...0000 ↗</a>
+    <span style="margin-left:auto">
+      <a class="etherscan-btn" id="etherscan-main" href="#" target="_blank">View on Etherscan ↗</a>
+    </span>
+  </div>
+
+  <!-- status -->
+  <div class="status-banner" id="status"></div>
+
+  <!-- candidates -->
+  <div class="section-label">Candidates — vote(candidateIndex)</div>
+  <div class="candidates" id="candidates-grid">
+    <div style="font-family:var(--mono);font-size:13px;color:var(--muted);padding:20px 0">
+      Connect your wallet to load candidates...
+    </div>
+  </div>
+
+  <!-- vote action -->
+  <div class="vote-section">
+    <div class="selected-info" id="selected-info">Select a candidate above to vote</div>
+    <button class="btn-vote" id="btn-vote" disabled onclick="castVote()">vote()</button>
+  </div>
+
+  <!-- chairperson panel -->
+  <div class="chair-panel" id="chair-panel" style="display:none">
+    <div class="chair-label">⚡ CHAIRPERSON PANEL — giveRightToVote()</div>
+    <div class="input-row">
+      <input type="text" id="voter-input" placeholder="0x... voter address" />
+      <button class="btn-small" onclick="giveRight()">Grant right</button>
+    </div>
+  </div>
+
+  <!-- log -->
+  <div class="section-label">Event log</div>
+  <div class="log-panel">
+    <div class="log-scroll" id="log">
+      <div class="log-empty">No events yet. Connect wallet and vote.</div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+<script>
+// ─── CONFIG — CANVIEU AIXÒ QUAN DESPLEGEU ───────────────────────────────────
+const CONTRACT_ADDRESS = "0x793129c4aDD2c7eF040b6fE276ae976136764Ea4"; 
+const SEPOLIA_CHAIN_ID = "0xaa36a7";
+
+const ABI = [
+  "constructor(string[] memory candidateNames)",
+  "function chairperson() view returns (address)",
+  "function giveRightToVote(address voter) external",
+  "function vote(uint candidateIndex) external",
+  "function delegate(address to) external",
+  "function winnerName() external view returns (string memory)",
+  "function winnerIndex() public view returns (uint)",
+  "function candidateCount() external view returns (uint)",
+  "function getResults() external view returns (string[] memory names, uint[] memory votes)",
+  "function voters(address) view returns (bool hasRightToVote, bool voted, address delegate, uint vote)",
+  "event VoterRegistered(address indexed voter)",
+  "event VoteCast(address indexed voter, uint indexed candidateIndex)",
+  "event VoteDelegated(address indexed from, address indexed to)"
+];
+// ────────────────────────────────────────────────────────────────────────────
+
+let provider, signer, contract;
+let userAddress = null;
+let isChairperson = false;
+let selectedCandidate = null;
+let hasVoted = false;
+let hasRight = false;
+let candidates = [];
+
+function shortAddr(addr) {
+  return addr.slice(0,6)+'...'+addr.slice(-4);
+}
+
+function showStatus(msg, type='info') {
+  const el = document.getElementById('status');
+  el.className = 'status-banner show ' + type;
+  el.innerHTML = msg;
+}
+
+function hideStatus() {
+  document.getElementById('status').className = 'status-banner';
+}
+
+function addLog(event, details) {
+  const log = document.getElementById('log');
+  const empty = log.querySelector('.log-empty');
+  if (empty) empty.remove();
+  const now = new Date().toLocaleTimeString('ca', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  entry.innerHTML = `<span class="log-time">${now}</span><span class="ev">emit ${event}</span><span class="addr">${details}</span>`;
+  log.prepend(entry);
+}
+
+async function connectWallet() {
+  if (!window.ethereum) {
+    showStatus('MetaMask not found. Please install it from metamask.io', 'error');
+    return;
+  }
+  try {
+    showStatus('<span class="spinner"></span> Connecting MetaMask...', 'info');
+    await window.ethereum.request({ method: 'eth_requestAccounts' });
+
+    // switch to Sepolia
+    try {
+      await window.ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: SEPOLIA_CHAIN_ID }]
+      });
+    } catch(e) {
+      showStatus('Please switch MetaMask to Sepolia testnet manually', 'warn');
+    }
+
+    provider = new ethers.BrowserProvider(window.ethereum);
+    signer = await provider.getSigner();
+    userAddress = await signer.getAddress();
+
+    document.getElementById('dot').classList.add('on');
+    document.getElementById('wallet-addr').innerHTML =
+      `<span>${shortAddr(userAddress)}</span> — connected`;
+    document.getElementById('network-badge').style.display = 'inline';
+    document.getElementById('btn-connect').textContent = 'Connected ✓';
+    document.getElementById('btn-connect').disabled = true;
+    document.getElementById('btn-connect').style.opacity = '0.5';
+
+    // etherscan links
+    const esUrl = `https://sepolia.etherscan.io/address/${CONTRACT_ADDRESS}`;
+    document.getElementById('etherscan-link').href = esUrl;
+    document.getElementById('etherscan-link').textContent = shortAddr(CONTRACT_ADDRESS) + ' ↗';
+    document.getElementById('etherscan-main').href = esUrl;
+
+    contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+
+    await loadState();
+    listenEvents();
+    hideStatus();
+
+    // poll every 10s
+    setInterval(loadState, 10000);
+
+  } catch(e) {
+    showStatus('Error: ' + (e.message || e), 'error');
+  }
+}
+
+async function loadState() {
+  if (!contract) return;
+  try {
+    const [names, votes] = await contract.getResults();
+    const chair = await contract.chairperson();
+    isChairperson = userAddress.toLowerCase() === chair.toLowerCase();
+
+    const voterInfo = await contract.voters(userAddress);
+    hasRight = voterInfo.hasRightToVote;
+    hasVoted = voterInfo.voted;
+
+    candidates = names.map((n,i) => ({ name: n, votes: Number(votes[i]) }));
+    renderCandidates();
+
+    if (isChairperson) {
+      document.getElementById('chair-panel').style.display = 'block';
+    }
+
+    updateVoteButton();
+  } catch(e) {
+    console.error('loadState error', e);
+  }
+}
+
+function renderCandidates() {
+  const grid = document.getElementById('candidates-grid');
+  const total = candidates.reduce((a,c) => a + c.votes, 0) || 1;
+  const maxVotes = Math.max(...candidates.map(c => c.votes));
+
+  grid.innerHTML = '';
+  candidates.forEach((c, i) => {
+    const pct = Math.round(c.votes / total * 100);
+    const isWinner = c.votes === maxVotes && c.votes > 0;
+    const isSelected = selectedCandidate === i;
+    const card = document.createElement('div');
+    card.className = 'candidate-card' + (isWinner ? ' winner' : '') + (isSelected ? ' selected' : '');
+    card.onclick = () => selectCandidate(i);
+    card.innerHTML = `
+      ${isWinner ? '<div class="winner-crown">👑</div>' : ''}
+      <div class="candidate-idx">index: ${i}</div>
+      <div class="candidate-name">${c.name}</div>
+      <div class="vote-count">${c.votes}</div>
+      <div class="vote-label">votes ${c.votes > 0 ? '· ' + pct + '%' : ''}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${c.votes===0?0:pct}%"></div></div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function selectCandidate(idx) {
+  if (hasVoted || !hasRight) return;
+  selectedCandidate = idx;
+  renderCandidates();
+  const name = candidates[idx]?.name || idx;
+  document.getElementById('selected-info').innerHTML =
+    `Selected: <span>${name}</span> (index ${idx})`;
+  updateVoteButton();
+}
+
+function updateVoteButton() {
+  const btn = document.getElementById('btn-vote');
+  const info = document.getElementById('selected-info');
+
+  if (!userAddress) {
+    btn.disabled = true;
+    btn.textContent = 'vote()';
+    return;
+  }
+  if (hasVoted) {
+    btn.disabled = true;
+    btn.textContent = 'Already voted ✓';
+    info.innerHTML = 'You have already cast your vote' +
+      '<span class="voted-badge">voted</span>';
+    return;
+  }
+  if (!hasRight) {
+    btn.disabled = true;
+    btn.textContent = 'No right to vote';
+    info.innerHTML = 'The chairperson has not granted you the right to vote yet';
+    return;
+  }
+  if (selectedCandidate === null) {
+    btn.disabled = true;
+    btn.textContent = 'vote()';
+    return;
+  }
+  btn.disabled = false;
+  btn.textContent = `vote(${selectedCandidate}) → ${candidates[selectedCandidate]?.name}`;
+}
+
+async function castVote() {
+  if (selectedCandidate === null || !contract) return;
+  try {
+    showStatus('<span class="spinner"></span> Sending transaction... confirm in MetaMask', 'info');
+    document.getElementById('btn-vote').disabled = true;
+    const tx = await contract.vote(selectedCandidate);
+    showStatus('<span class="spinner"></span> Transaction sent! Waiting for confirmation... <a style="color:var(--accent2)" href="https://sepolia.etherscan.io/tx/' + tx.hash + '" target="_blank">View tx ↗</a>', 'info');
+    await tx.wait();
+    hasVoted = true;
+    showStatus('✓ Vote confirmed on-chain!', 'success');
+    addLog('VoteCast', `voter=${shortAddr(userAddress)}, candidate=${selectedCandidate} (${candidates[selectedCandidate]?.name})`);
+    await loadState();
+  } catch(e) {
+    showStatus('Error: ' + (e.reason || e.message || 'Transaction rejected'), 'error');
+    document.getElementById('btn-vote').disabled = false;
+  }
+}
+
+async function giveRight() {
+  const addr = document.getElementById('voter-input').value.trim();
+  if (!addr || !contract) return;
+  try {
+    showStatus('<span class="spinner"></span> Granting right to vote... confirm in MetaMask', 'info');
+    const tx = await contract.giveRightToVote(addr);
+    await tx.wait();
+    showStatus('✓ Right granted to ' + shortAddr(addr), 'success');
+    addLog('VoterRegistered', `voter=${shortAddr(addr)}`);
+    document.getElementById('voter-input').value = '';
+  } catch(e) {
+    showStatus('Error: ' + (e.reason || e.message), 'error');
+  }
+}
+
+function listenEvents() {
+  contract.on('VoteCast', (voter, candidateIndex) => {
+    addLog('VoteCast', `voter=${shortAddr(voter)}, candidate=${Number(candidateIndex)}`);
+    loadState();
+  });
+  contract.on('VoterRegistered', (voter) => {
+    addLog('VoterRegistered', `voter=${shortAddr(voter)}`);
+    if (voter.toLowerCase() === userAddress?.toLowerCase()) {
+      hasRight = true;
+      updateVoteButton();
+    }
+  });
+  contract.on('VoteDelegated', (from, to) => {
+    addLog('VoteDelegated', `from=${shortAddr(from)}, to=${shortAddr(to)}`);
+    loadState();
+  });
+}
+
+// auto-connect if already authorized
+window.addEventListener('load', async () => {
+  if (window.ethereum) {
+    const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+    if (accounts.length > 0) connectWallet();
+  }
+});
+</script>
+</body>
+</html>
